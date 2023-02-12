@@ -41,16 +41,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-
       - name: 'Create env file'
-              run: |
-                touch .env
-                echo POSTGRES_USER=${{ env.POSTGRES_USER }} >> .env
-                echo POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} >> .env
-                echo DB_NAME_TEST=${{ env.DB_NAME_TEST }} >> .env
-                echo POSTGRES_PORT=${{ env.POSTGRES_PORT }} >> .env
-                echo DB_HOST=${{ env.DB_HOST }} >> .env
-                cat .env
+          run: |
+            touch .env
+            echo POSTGRES_USER=${{ env.POSTGRES_USER }} >> .env
+            echo POSTGRES_PASSWORD=${{ env.POSTGRES_PASSWORD }} >> .env
+            echo DB_NAME_TEST=${{ env.DB_NAME_TEST }} >> .env
+            echo POSTGRES_PORT=${{ env.POSTGRES_PORT }} >> .env
+            echo DB_HOST=${{ env.DB_HOST }} >> .env
+            cat .env
                 
       - name: Run install
         uses: borales/actions-yarn@v4
