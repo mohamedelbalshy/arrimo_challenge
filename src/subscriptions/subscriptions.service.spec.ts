@@ -169,4 +169,24 @@ describe('SubscriptionsService', () => {
       async () => await service.update('fake id', updateSubscriptionDto),
     ).rejects.toThrow();
   });
+
+  it('should delete subscription by id', async () => {
+    const subscriptionDto: CreateSubscriptionDto = {
+      email: faker.internet.email(),
+      is_email_verified: true,
+      subscriber_name: faker.name.fullName(),
+      subscriber_country: faker.address.country(),
+      frequency: SubscriptionFrequency.DAILY,
+    };
+
+    const createdSubscription = await service.create(subscriptionDto);
+
+    const removeSubscriptionRes = await service.remove(createdSubscription.id);
+
+    expect(removeSubscriptionRes.affected).toEqual(1);
+  });
+
+  it('should not delete subscription by wrong id', async () => {
+    expect(async () => await service.remove('fake id')).rejects.toThrow();
+  });
 });
