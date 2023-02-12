@@ -7,7 +7,8 @@ import { Subscription } from './entities/subscription.entity';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionFrequency } from './enums/subscription-frequency.enum';
 import { SubscriptionsModule } from './subscriptions.module';
-import { ConflictException } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 
 describe('SubscriptionsService', () => {
   let service: SubscriptionsService;
@@ -16,14 +17,15 @@ describe('SubscriptionsService', () => {
   beforeEach(async () => {
     moduleRef = await Test.createTestingModule({
       imports: [
+        ConfigModule.forRoot(),
         SubscriptionsModule,
         TypeOrmModule.forRoot({
           type: 'postgres',
-          host: 'localhost',
-          port: 5432,
-          username: 'postgres',
-          password: 'postgres',
-          database: 'arrimo_challenge_test',
+          host: process.env.DB_HOST || 'localhost',
+          port: +process.env.DB_PORT || 5432,
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'postgres',
+          database: process.env.DB_NAME_TEST || 'arrimo_challenge_test',
           entities: [Subscription],
           autoLoadEntities: true,
           synchronize: true,
@@ -43,10 +45,6 @@ describe('SubscriptionsService', () => {
 
   afterAll(async () => {
     await moduleRef.close();
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
   });
 
   it('should create subscription', async () => {
@@ -97,5 +95,78 @@ describe('SubscriptionsService', () => {
     expect(async () => await service.create(subscriptionDto)).rejects.toThrow(
       'Email must be unique!',
     );
+  });
+
+  it('should list all subscriptions', async () => {
+    const subscriptionDto: CreateSubscriptionDto = {
+      email: faker.internet.email(),
+      is_email_verified: true,
+      subscriber_name: faker.name.fullName(),
+      subscriber_country: faker.address.country(),
+      frequency: SubscriptionFrequency.DAILY,
+    };
+
+    const createdSubscription = await service.create(subscriptionDto);
+
+    const subscriptions = await service.findAll({ skip: 0, take: 10 });
+
+    expect(subscriptions[0]).toEqual(createdSubscription);
+  });
+
+  it('should get single subscription by id', async () => {
+    const subscriptionDto: CreateSubscriptionDto = {
+      email: faker.internet.email(),
+      is_email_verified: true,
+      subscriber_name: faker.name.fullName(),
+      subscriber_country: faker.address.country(),
+      frequency: SubscriptionFrequency.DAILY,
+    };
+
+    const createdSubscription = await service.create(subscriptionDto);
+
+    const foundSubscription = await service.findOne(createdSubscription.id);
+
+    expect(foundSubscription).toEqual(createdSubscription);
+  });
+
+  it('should return subscription not found by wrong id', async () => {
+    expect(async () => await service.findOne('1')).rejects.toThrow();
+  });
+
+  it('should update subscription by id', async () => {
+    const subscriptionDto: CreateSubscriptionDto = {
+      email: faker.internet.email(),
+      is_email_verified: true,
+      subscriber_name: faker.name.fullName(),
+      subscriber_country: faker.address.country(),
+      frequency: SubscriptionFrequency.DAILY,
+    };
+
+    const createdSubscription = await service.create(subscriptionDto);
+
+    const updateSubscriptionDto: UpdateSubscriptionDto = {
+      email: faker.internet.email(),
+    };
+    const updatedSubscription = await service.update(
+      createdSubscription.id,
+      updateSubscriptionDto,
+    );
+    delete updatedSubscription.updated_at;
+    delete createdSubscription.updated_at;
+
+    expect(updatedSubscription).toEqual({
+      ...createdSubscription,
+      email: updateSubscriptionDto.email,
+    });
+  });
+
+  it('should return subscription not found when update subscription by invalid id', async () => {
+    const updateSubscriptionDto: UpdateSubscriptionDto = {
+      email: faker.internet.email(),
+    };
+
+    expect(
+      async () => await service.update('fake id', updateSubscriptionDto),
+    ).rejects.toThrow();
   });
 });

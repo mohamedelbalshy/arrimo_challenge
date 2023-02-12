@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { Repository } from 'typeorm';
@@ -40,6 +45,9 @@ export class SubscriptionsService {
         where: {},
         take,
         skip,
+        order: {
+          created_at: 'DESC',
+        },
       });
       return subscriptions;
     } catch (error) {
@@ -47,15 +55,27 @@ export class SubscriptionsService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} subscription`;
+  async findOne(id: string): Promise<Subscription> {
+    const subscription = await this.subscriptionRepo.findOne({ where: { id } });
+
+    if (!subscription)
+      throw new NotFoundException(`Subscription with id: ${id} not found!`);
+    return subscription;
   }
 
-  update(id: number, updateSubscriptionDto: UpdateSubscriptionDto) {
-    return `This action updates a #${id} subscription`;
+  async update(
+    id: string,
+    updateSubscriptionDto: UpdateSubscriptionDto,
+  ): Promise<Subscription> {
+    const subscription = await this.findOne(id);
+
+    return this.subscriptionRepo.save({
+      ...subscription,
+      ...updateSubscriptionDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} subscription`;
+  async remove(id: string) {
+    return this.subscriptionRepo.delete({ id });
   }
 }
